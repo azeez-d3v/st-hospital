@@ -1,0 +1,1 @@
+{"schedule_active": true, "frequency": "Daily", "weekday": "Monday", "day_of_month": 1, "schedule_time": {"hour": 6, "minute": 35}, "multiple_times": false, "daily_times": [{"hour": 9, "minute": 0}], "interval_hours": 24, "next_run": "2025-04-02T06:35:00"}
