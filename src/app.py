@@ -878,7 +878,7 @@ async def main():
             st.number_input("Minute (0-59)", 
                           min_value=0, 
                           max_value=59, 
-                          value=st.session_state.schedule_minute,
+                        #   value=st.session_state.schedule_minute,
                           on_change=update_schedule_minute_hourly,
                           key="schedule_minute_hourly")
             
@@ -895,14 +895,13 @@ async def main():
                 st.number_input("Hour (0-23)", 
                               min_value=0, 
                               max_value=23,
-                              value=st.session_state.schedule_hour,
                               on_change=update_schedule_hour_daily,
                               key="schedule_hour_daily")
             with col2:
                 st.number_input("Minute (0-59)", 
                               min_value=0, 
                               max_value=59,
-                              value=st.session_state.schedule_minute,
+                            #   value=st.session_state.schedule_minute,
                               on_change=update_schedule_minute_daily,
                               key="schedule_minute_daily")
             
@@ -926,14 +925,14 @@ async def main():
                 st.number_input("Hour (0-23)", 
                               min_value=0, 
                               max_value=23,
-                              value=st.session_state.schedule_hour,
+                            #   value=st.session_state.schedule_hour,
                               on_change=update_schedule_hour_weekly,
                               key="schedule_hour_weekly")
             with col2:
                 st.number_input("Minute (0-59)", 
                               min_value=0, 
                               max_value=59,
-                              value=st.session_state.schedule_minute,
+                            #   value=st.session_state.schedule_minute,
                               on_change=update_schedule_minute_weekly,
                               key="schedule_minute_weekly")
             
@@ -953,7 +952,7 @@ async def main():
                 st.number_input("Day of Month (1-28)", 
                               min_value=1, 
                               max_value=28,
-                              value=st.session_state.schedule_day,
+                            #   value=st.session_state.schedule_day,
                               on_change=update_schedule_day,
                               key="schedule_day_monthly")
             
@@ -962,14 +961,14 @@ async def main():
                 st.number_input("Hour (0-23)", 
                               min_value=0, 
                               max_value=23,
-                              value=st.session_state.schedule_hour,
+                            #   value=st.session_state.schedule_hour,
                               on_change=update_schedule_hour_monthly,
                               key="schedule_hour_monthly")
             with col2:
                 st.number_input("Minute (0-59)", 
                               min_value=0, 
                               max_value=59,
-                              value=st.session_state.schedule_minute,
+                            #   value=st.session_state.schedule_minute,
                               on_change=update_schedule_minute_monthly,
                               key="schedule_minute_monthly")
             
@@ -981,7 +980,7 @@ async def main():
             st.number_input("Run every X minutes", 
                           min_value=1, 
                           max_value=10080,  # 7 days in minutes
-                          value=st.session_state.custom_minutes,
+                        #   value=st.session_state.custom_minutes,
                           on_change=update_custom_minutes,
                           key="custom_minutes_input")
         
