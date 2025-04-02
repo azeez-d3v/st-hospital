@@ -400,18 +400,48 @@ async def fetch_data():
     files_downloaded = {}
     try:
         results, stats = await st.session_state.fetcher.fetch_links()
-        # Log status for each URL
+        
+        # First, check if there are any files to download
+        pre_download_checks = {}
         for country, urls in active_urls.items():
+            pre_download_checks[country] = {}
             for url in urls:
                 # Check if the URL was successfully fetched
                 country_results = results.get(country, [])
-                was_successful = any(link['base_url'] == url for link in country_results)
-                status = "success" if was_successful else "failed"
-                log_entry = log_fetch_status(country, url, status)
-                all_logs.append(log_entry)
+                links_for_url = [link for link in country_results if link['base_url'] == url]
+                was_successful = len(links_for_url) > 0
+                
+                # Store result for later use
+                pre_download_checks[country][url] = {
+                    'successful': was_successful,
+                    'links': links_for_url
+                }
         
-        # Download files
-        files_downloaded = await st.session_state.fetcher.download_files(results)
+        # Download files only once
+        if results:
+            files_downloaded = await st.session_state.fetcher.download_files(results)
+        
+        # Now create logs with the data_updated flag
+        for country, url_checks in pre_download_checks.items():
+            for url, check_result in url_checks.items():
+                status = "success" if check_result['successful'] else "failed"
+                
+                # Check if this URL's data was updated (files were downloaded)
+                data_updated = False
+                if status == "success" and country in files_downloaded:
+                    # Check if any of the downloaded files came from this URL
+                    # We determine this by checking if the file's base_url matches our current url
+                    for file_name in files_downloaded.get(country, []):
+                        # The data was updated for this URL
+                        file_base = next((link['base_url'] for link in check_result['links'] 
+                                          if st.session_state.fetcher._get_file_name(link['base_url'], country) == file_name), None)
+                        if file_base == url:
+                            data_updated = True
+                            break
+                
+                # Create log entry
+                log_entry = log_fetch_status(country, url, status, data_updated=data_updated)
+                all_logs.append(log_entry)
         
         # Update last run time
         st.session_state.last_run_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -424,7 +454,7 @@ async def fetch_data():
         # Log any unexpected errors
         for country, urls in active_urls.items():
             for url in urls:
-                log_entry = log_fetch_status(country, url, "error", str(e))
+                log_entry = log_fetch_status(country, url, "error", str(e), data_updated=False)
                 all_logs.append(log_entry)
         
         logger.error(f"Error fetching data: {str(e)}")
@@ -526,7 +556,7 @@ def save_email_config():
         logger.error(f"Failed to save email configuration: {str(e)}")
         return False
 
-def log_fetch_status(country, url, status, error_message=None):
+def log_fetch_status(country, url, status, error_message=None, data_updated=False):
     """Log fetch status to a file with date and status"""
     log_dir = os.path.join('src', 'data', 'logs')
     os.makedirs(log_dir, exist_ok=True)
@@ -548,6 +578,7 @@ def log_fetch_status(country, url, status, error_message=None):
         'country': country,
         'url': url,
         'status': status,
+        'data_updated': data_updated
     }
     
     if error_message:
@@ -559,7 +590,7 @@ def log_fetch_status(country, url, status, error_message=None):
     with open(log_file, 'w') as f:
         json.dump(logs[-1000:], f, indent=4)
     
-    logger.info(f"Logged fetch status: {status} for {country} - {url}")
+    logger.info(f"Logged fetch status: {status} for {country} - {url}, Data updated: {data_updated}")
     return log_entry
 
 def toggle_email_notifications():
@@ -1143,8 +1174,13 @@ async def main():
                 # Show last 10 fetch activities
                 recent_logs = log_df.sort_values('timestamp', ascending=False).head(10)
                 recent_logs['time'] = recent_logs['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
+                
+                # Set default value for data_updated if it doesn't exist in older logs
+                if 'data_updated' not in recent_logs.columns:
+                    recent_logs['data_updated'] = False
+                
                 st.dataframe(
-                    recent_logs[['time', 'country', 'status', 'url']],
+                    recent_logs[['time', 'country', 'status', 'data_updated', 'url']],
                     use_container_width=True,
                     height=250,  # Added fixed height to make it scrollable
                     column_config={
@@ -1155,6 +1191,10 @@ async def main():
                             help='Fetch status',
                             options=['success', 'failed', 'error'],
                             required=True,
+                        ),
+                        'data_updated': st.column_config.CheckboxColumn(
+                            'Data Updated',
+                            help='Whether new data was downloaded during this fetch',
                         ),
                         'url': 'URL'
                     }
